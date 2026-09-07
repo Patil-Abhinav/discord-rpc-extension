@@ -1,4 +1,4 @@
-﻿# Discord Rich Presence Chrome Extension (Browser-Only)
+# Discord Rich Presence Chrome Extension (Browser-Only)
 
 A lightweight Google Chrome extension (Manifest V3) that sets custom Discord Rich Presence (RPC) activities with custom details, state, timestamps, images, and clickable buttons directly from your browser—**no Discord desktop app or local server required**.
 
@@ -96,6 +96,10 @@ discord-rpc-extension/
 
 ---
 
-## 📄 License
+## 📄 License & Intellectual Property
 
-MIT License. Open source and free to use.
+**Copyright (c) 2026 Abhinav Patil ([@Patil-Abhinav](https://github.com/Patil-Abhinav)). All Rights Reserved.**
+
+This project is **proprietary software** licensed and owned exclusively by **Abhinav Patil**. 
+- It is **NOT** open source or free to use, copy, redistribute, or modify without explicit prior written authorization from the owner.
+- Refer to [`LICENSE`](./LICENSE) for full legal terms and conditions.
