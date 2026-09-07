@@ -1,0 +1,17 @@
+﻿{
+  "manifest_version": 3,
+  "name": "Discord Rich Presence (No App Needed)",
+  "version": "2.2.0",
+  "description": "Set Discord Rich Presence with buttons & images directly from Chrome via Gateway WebSocket",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "idle"
+  ]
+}

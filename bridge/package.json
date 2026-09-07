@@ -1,0 +1,14 @@
+{
+  "name": "discord-rpc-bridge",
+  "version": "1.0.0",
+  "description": "Local WebSocket to Discord RPC Bridge",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "discord-rpc": "^4.0.1",
+    "sharp": "^0.35.4",
+    "ws": "^8.18.0"
+  }
+}
