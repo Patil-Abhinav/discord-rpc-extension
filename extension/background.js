@@ -13,6 +13,7 @@ const KNOWN_ASSETS = {
   'promptblox': '1544811727294570526'
 };
 
+// Periodic keepalive alarm (every 15s) to guarantee connection and enforce "online"
 chrome.alarms.create('rpc_keepalive', { periodInMinutes: 0.25 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -23,32 +24,53 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         connectGateway();
       } else if (preventIdleMode) {
         sendPresenceUpdate();
+        enforceAccountOnlineSetting();
       }
     }
   }
 });
 
+// Chrome Idle listener: instantly push online state when state changes
 if (chrome.idle) {
   chrome.idle.setDetectionInterval(60);
   chrome.idle.onStateChanged.addListener((newState) => {
-    if (isConnected && preventIdleMode && gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
+    if (isConnected && preventIdleMode) {
+      console.log('[Background] Chrome idle state changed:', newState);
       sendPresenceUpdate();
+      enforceAccountOnlineSetting();
     }
   });
 }
 
+// 1. Enforces account-level status via REST API so other open browser tabs cannot switch user to idle
+async function enforceAccountOnlineSetting() {
+  if (!userToken || !preventIdleMode) return;
+  try {
+    await fetch('https://discord.com/api/v9/users/@me/settings', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': userToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status: 'online' })
+    });
+  } catch (e) {
+    // Silently ignore network hiccups
+  }
+}
+
 function calculateEffectiveStartTime() {
   if (!baseStartTime) baseStartTime = Date.now();
-  // Subtract hour offset in milliseconds so elapsed time is higher
   return Math.floor(baseStartTime - (hourOffset * 3600 * 1000));
 }
 
+// 2. Gateway presence update (Opcode 3)
 function sendPresenceUpdate() {
   if (!gatewayWs || gatewayWs.readyState !== WebSocket.OPEN || !currentActivity) return;
   const updatePayload = {
     op: 3,
     d: {
-      since: null,
+      since: 0,
       activities: [currentActivity],
       status: "online",
       afk: false
@@ -56,7 +78,6 @@ function sendPresenceUpdate() {
   };
   try {
     gatewayWs.send(JSON.stringify(updatePayload));
-    console.log('[Background] Sent presence update with timestamps:', currentActivity.timestamps);
   } catch (e) {
     console.error('[Background] Failed to send presence update:', e);
   }
@@ -80,18 +101,22 @@ function connectGateway() {
     try {
       const msg = JSON.parse(e.data);
 
+      // Opcode 10: Hello
       if (msg.op === 10) {
         const interval = msg.d.heartbeat_interval;
         clearInterval(heartbeatTimer);
         heartbeatTimer = setInterval(() => {
           if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
+            // Heartbeat
             gatewayWs.send(JSON.stringify({ op: 1, d: null }));
+            // Reinforce online presence on every heartbeat
             if (preventIdleMode) {
               sendPresenceUpdate();
             }
           }
         }, interval);
 
+        // Identify (Opcode 2) with explicit status: "online" and since: 0
         const identifyPayload = {
           op: 2,
           d: {
@@ -104,7 +129,7 @@ function connectGateway() {
             },
             presence: {
               status: "online",
-              since: null,
+              since: 0,
               afk: false,
               activities: [currentActivity]
             }
@@ -113,11 +138,14 @@ function connectGateway() {
         gatewayWs.send(JSON.stringify(identifyPayload));
       }
 
+      // Opcode 0: Ready
       if (msg.op === 0 && (msg.t === 'READY' || msg.t === 'SESSIONS_REPLACE')) {
         isConnected = true;
         chrome.storage.local.set({ isConnected: true, statusMsg: 'Active on Discord' });
-        // Immediately push presence update upon connection to lock in custom timestamps
         sendPresenceUpdate();
+        if (preventIdleMode) {
+          enforceAccountOnlineSetting();
+        }
       }
 
       if (msg.op === 9) {
