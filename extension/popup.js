@@ -3,6 +3,15 @@ const gatewayStatusEl = document.getElementById('gatewayStatus');
 const timerOffsetDisplay = document.getElementById('timerOffsetDisplay');
 const customHoursInput = document.getElementById('customHoursInput');
 
+const largeImageInput = document.getElementById('largeImage');
+const smallImageInput = document.getElementById('smallImage');
+const largeFileInput = document.getElementById('largeFileInput');
+const smallFileInput = document.getElementById('smallFileInput');
+const largePreview = document.getElementById('largePreview');
+const smallPreview = document.getElementById('smallPreview');
+const largeImageName = document.getElementById('largeImageName');
+const smallImageName = document.getElementById('smallImageName');
+
 let currentHourOffset = 0;
 
 function setStatus(msg, type = '') {
@@ -45,7 +54,79 @@ function applyHourDelta(delta) {
   });
 }
 
-// Restore saved form values and current connection state
+// Upload helper: uploads an image file directly to Catbox/Litterbox or Imgur free hosting
+async function uploadImageFile(file) {
+  const formData = new FormData();
+  formData.append('reqtype', 'fileupload');
+  formData.append('time', '72h'); // 72h temporary hosting
+  formData.append('fileToUpload', file);
+
+  try {
+    const res = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+      method: 'POST',
+      body: formData
+    });
+    if (res.ok) {
+      const url = await res.text();
+      if (url.startsWith('http')) return url.trim();
+    }
+  } catch (e) {
+    console.warn('Litterbox upload failed, attempting fallback...', e);
+  }
+
+  // Fallback to free image uploader
+  const fbData = new FormData();
+  fbData.append('image', file);
+  const fbRes = await fetch('https://api.imgur.com/3/image', {
+    method: 'POST',
+    headers: { 'Authorization': 'Client-ID 1c9b63ce607f2a1' },
+    body: fbData
+  });
+  const json = await fbRes.json();
+  if (json.data && json.data.link) return json.data.link;
+  throw new Error('Image upload failed. Please use an image URL instead.');
+}
+
+// Handle file pickers
+largeFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  largePreview.src = URL.createObjectURL(file);
+  largePreview.style.display = 'block';
+  largeImageName.textContent = 'Uploading: ' + file.name + '...';
+
+  try {
+    const uploadedUrl = await uploadImageFile(file);
+    largeImageInput.value = uploadedUrl;
+    largeImageName.textContent = file.name;
+    setStatus('Large image uploaded and ready!', 'success');
+  } catch (err) {
+    largeImageName.textContent = 'Upload failed';
+    setStatus(err.message, 'error');
+  }
+});
+
+smallFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  smallPreview.src = URL.createObjectURL(file);
+  smallPreview.style.display = 'block';
+  smallImageName.textContent = 'Uploading: ' + file.name + '...';
+
+  try {
+    const uploadedUrl = await uploadImageFile(file);
+    smallImageInput.value = uploadedUrl;
+    smallImageName.textContent = file.name;
+    setStatus('Small image uploaded and ready!', 'success');
+  } catch (err) {
+    smallImageName.textContent = 'Upload failed';
+    setStatus(err.message, 'error');
+  }
+});
+
+// Restore saved form values
 chrome.storage.local.get([
   'token', 'details', 'state', 'largeImage', 'smallImage',
   'btn1Text', 'btn1Url', 'btn2Text', 'btn2Url',
@@ -54,8 +135,22 @@ chrome.storage.local.get([
   if (data.token) document.getElementById('userToken').value = data.token;
   if (data.details) document.getElementById('details').value = data.details;
   if (data.state) document.getElementById('state').value = data.state;
-  if (data.largeImage) document.getElementById('largeImage').value = data.largeImage;
-  if (data.smallImage) document.getElementById('smallImage').value = data.smallImage;
+  if (data.largeImage) {
+    largeImageInput.value = data.largeImage;
+    if (data.largeImage.startsWith('http')) {
+      largePreview.src = data.largeImage;
+      largePreview.style.display = 'block';
+      largeImageName.textContent = 'Custom URL';
+    }
+  }
+  if (data.smallImage) {
+    smallImageInput.value = data.smallImage;
+    if (data.smallImage.startsWith('http')) {
+      smallPreview.src = data.smallImage;
+      smallPreview.style.display = 'block';
+      smallImageName.textContent = 'Custom URL';
+    }
+  }
   if (data.btn1Text) document.getElementById('btn1Text').value = data.btn1Text;
   if (data.btn1Url) document.getElementById('btn1Url').value = data.btn1Url;
   if (data.btn2Text) document.getElementById('btn2Text').value = data.btn2Text;
@@ -77,7 +172,7 @@ chrome.storage.local.get([
   }
 });
 
-// Quick preset buttons (+1, +10, +20, -1, -10, -20)
+// Presets
 document.querySelectorAll('.timer-btn[data-hours]').forEach((btn) => {
   btn.addEventListener('click', () => {
     const delta = parseInt(btn.getAttribute('data-hours'), 10);
@@ -85,7 +180,6 @@ document.querySelectorAll('.timer-btn[data-hours]').forEach((btn) => {
   });
 });
 
-// Reset offset back to 0
 document.getElementById('resetOffsetBtn').addEventListener('click', () => {
   updateOffsetUI(0);
   chrome.storage.local.set({ timerHourOffset: 0 });
@@ -95,38 +189,27 @@ document.getElementById('resetOffsetBtn').addEventListener('click', () => {
   });
 });
 
-// Custom Add Hours Button
 document.getElementById('customAddBtn').addEventListener('click', () => {
   const val = parseFloat(customHoursInput.value);
-  if (!isNaN(val) && val > 0) {
-    applyHourDelta(val);
-  }
+  if (!isNaN(val) && val > 0) applyHourDelta(val);
 });
 
-// Custom Subtract Hours Button
 document.getElementById('customSubBtn').addEventListener('click', () => {
   const val = parseFloat(customHoursInput.value);
-  if (!isNaN(val) && val > 0) {
-    applyHourDelta(-val);
-  }
+  if (!isNaN(val) && val > 0) applyHourDelta(-val);
 });
 
-// Listen for storage changes from background worker
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.isConnected) {
-    updateBadge(changes.isConnected.newValue);
-  }
-  if (changes.statusMsg) {
-    setStatus(changes.statusMsg.newValue, changes.isConnected?.newValue ? 'success' : '');
-  }
+  if (changes.isConnected) updateBadge(changes.isConnected.newValue);
+  if (changes.statusMsg) setStatus(changes.statusMsg.newValue, changes.isConnected?.newValue ? 'success' : '');
 });
 
 document.getElementById('connectBtn').addEventListener('click', () => {
   const token = document.getElementById('userToken').value.trim();
   const details = document.getElementById('details').value.trim();
   const state = document.getElementById('state').value.trim();
-  const largeImage = document.getElementById('largeImage').value.trim() || 'lunatichost';
-  const smallImage = document.getElementById('smallImage').value.trim() || 'promptblox';
+  const largeImage = largeImageInput.value.trim() || 'lunatichost';
+  const smallImage = smallImageInput.value.trim() || 'promptblox';
   const btn1Text = document.getElementById('btn1Text').value.trim();
   const btn1Url = document.getElementById('btn1Url').value.trim();
   const btn2Text = document.getElementById('btn2Text').value.trim();

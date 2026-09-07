@@ -6,7 +6,7 @@
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      width: 340px;
+      width: 350px;
       margin: 0;
       padding: 16px;
       background-color: #2b2d31;
@@ -63,6 +63,42 @@
     }
     .row .form-group {
       flex: 1;
+    }
+    .image-preview-card {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 4px;
+      padding: 6px 8px;
+      background: #232428;
+      border-radius: 4px;
+      border: 1px solid #313338;
+    }
+    .img-preview {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      background: #1e1f22;
+      object-fit: cover;
+      display: none;
+    }
+    .upload-btn-label {
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      background: #383a40;
+      color: #dbdee1;
+      border-radius: 3px;
+      cursor: pointer;
+      text-transform: none;
+      margin: 0;
+      white-space: nowrap;
+      border: 1px solid #4e5058;
+    }
+    .upload-btn-label:hover {
+      background: #4752c4;
+      color: #ffffff;
+      border-color: #5865f2;
     }
     .checkbox-row {
       display: flex;
@@ -242,14 +278,26 @@
     <input type="text" id="state" value="Promptblox" />
   </div>
 
-  <div class="row">
-    <div class="form-group">
-      <label for="largeImage">Large Image</label>
-      <input type="text" id="largeImage" value="lunatichost" />
+  <!-- Image Section with direct URL and local File Picker -->
+  <div class="form-group">
+    <label for="largeImage">Large Image (Asset Key or Direct Image URL)</label>
+    <input type="text" id="largeImage" value="lunatichost" placeholder="lunatichost or https://..." />
+    <div class="image-preview-card">
+      <label for="largeFileInput" class="upload-btn-label">📁 Choose File</label>
+      <input type="file" id="largeFileInput" accept="image/*" style="display:none;" />
+      <img id="largePreview" class="img-preview" alt="Large Preview" />
+      <span id="largeImageName" style="font-size: 11px; color: #949ba4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Preset: lunatichost</span>
     </div>
-    <div class="form-group">
-      <label for="smallImage">Small Image</label>
-      <input type="text" id="smallImage" value="promptblox" />
+  </div>
+
+  <div class="form-group">
+    <label for="smallImage">Small Image (Asset Key or Direct Image URL)</label>
+    <input type="text" id="smallImage" value="promptblox" placeholder="promptblox or https://..." />
+    <div class="image-preview-card">
+      <label for="smallFileInput" class="upload-btn-label">📁 Choose File</label>
+      <input type="file" id="smallFileInput" accept="image/*" style="display:none;" />
+      <img id="smallPreview" class="img-preview" alt="Small Preview" />
+      <span id="smallImageName" style="font-size: 11px; color: #949ba4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Preset: promptblox</span>
     </div>
   </div>
 
@@ -289,7 +337,7 @@
       <button type="button" class="timer-btn reset" id="resetOffsetBtn">Reset</button>
     </div>
 
-    <!-- Custom Hours Input (+ / - any custom number of hours) -->
+    <!-- Custom Hours Input -->
     <div class="custom-hours-row">
       <input type="number" id="customHoursInput" placeholder="Hours" min="1" max="99999" value="5" />
       <button type="button" id="customAddBtn" class="custom-btn add">+ Add Hours</button>
