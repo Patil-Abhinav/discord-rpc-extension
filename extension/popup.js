@@ -1,4 +1,4 @@
-﻿const statusEl = document.getElementById('statusMessage');
+const statusEl = document.getElementById('statusMessage');
 const gatewayStatusEl = document.getElementById('gatewayStatus');
 const timerOffsetDisplay = document.getElementById('timerOffsetDisplay');
 const customHoursInput = document.getElementById('customHoursInput');
@@ -246,4 +246,9 @@ document.getElementById('clearBtn').addEventListener('click', () => {
     updateBadge(false);
     setStatus('Disconnected. Status cleared.', '');
   });
+});
+
+document.getElementById('discordInviteBtn').addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: 'https://discord.gg/shPR5ZNZhY' });
 });
