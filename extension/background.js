@@ -13,7 +13,6 @@ const KNOWN_ASSETS = {
   'promptblox': '1544811727294570526'
 };
 
-// Periodic keepalive alarm: reconnects if dropped & enforces active "online" status
 chrome.alarms.create('rpc_keepalive', { periodInMinutes: 0.25 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -40,8 +39,8 @@ if (chrome.idle) {
 
 function calculateEffectiveStartTime() {
   if (!baseStartTime) baseStartTime = Date.now();
-  // Subtract hour offset so the elapsed timer on Discord shows +X hours ahead
-  return baseStartTime - (hourOffset * 3600000);
+  // Subtract hour offset in milliseconds so elapsed time is higher
+  return Math.floor(baseStartTime - (hourOffset * 3600 * 1000));
 }
 
 function sendPresenceUpdate() {
@@ -57,6 +56,7 @@ function sendPresenceUpdate() {
   };
   try {
     gatewayWs.send(JSON.stringify(updatePayload));
+    console.log('[Background] Sent presence update with timestamps:', currentActivity.timestamps);
   } catch (e) {
     console.error('[Background] Failed to send presence update:', e);
   }
@@ -116,6 +116,8 @@ function connectGateway() {
       if (msg.op === 0 && (msg.t === 'READY' || msg.t === 'SESSIONS_REPLACE')) {
         isConnected = true;
         chrome.storage.local.set({ isConnected: true, statusMsg: 'Active on Discord' });
+        // Immediately push presence update upon connection to lock in custom timestamps
+        sendPresenceUpdate();
       }
 
       if (msg.op === 9) {
