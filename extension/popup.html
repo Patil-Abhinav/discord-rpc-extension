@@ -90,7 +90,7 @@
       background: #232428;
       border: 1px solid #313338;
       border-radius: 6px;
-      padding: 9px;
+      padding: 10px;
       margin-top: 10px;
       margin-bottom: 6px;
     }
@@ -98,7 +98,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
     .timer-header span {
       font-size: 10px;
@@ -107,24 +107,24 @@
       color: #b5bac1;
     }
     .timer-display {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
       color: #57f287;
     }
     .timer-buttons-row {
       display: flex;
-      gap: 4px;
-      margin-bottom: 4px;
+      gap: 5px;
+      margin-bottom: 6px;
     }
     .timer-btn {
       flex: 1;
-      padding: 5px 0;
+      padding: 6px 0;
       font-size: 11px;
       font-weight: 600;
       background: #313338;
       color: #dbdee1;
       border: 1px solid #3f4147;
-      border-radius: 3px;
+      border-radius: 4px;
       cursor: pointer;
       transition: background 0.1s ease, color 0.1s ease;
     }
@@ -141,6 +141,44 @@
     .timer-btn.reset:hover {
       background: #4e5058;
       color: #ffffff;
+    }
+    .custom-hours-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #313338;
+      align-items: center;
+    }
+    .custom-hours-row input {
+      width: 75px;
+      padding: 5px 8px;
+      font-size: 12px;
+      text-align: center;
+    }
+    .custom-btn {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+    .custom-btn.add {
+      background-color: #23a55a;
+      color: white;
+    }
+    .custom-btn.add:hover {
+      background-color: #1f9250;
+    }
+    .custom-btn.sub {
+      background-color: #da373c;
+      color: white;
+    }
+    .custom-btn.sub:hover {
+      background-color: #b82d31;
     }
     .btn-row {
       display: flex;
@@ -237,6 +275,8 @@
       <span>Adjust Elapsed Time</span>
       <span id="timerOffsetDisplay" class="timer-display">+0h</span>
     </div>
+
+    <!-- Quick Presets -->
     <div class="timer-buttons-row">
       <button type="button" class="timer-btn" data-hours="1">+1h</button>
       <button type="button" class="timer-btn" data-hours="10">+10h</button>
@@ -247,6 +287,13 @@
       <button type="button" class="timer-btn negative" data-hours="-10">-10h</button>
       <button type="button" class="timer-btn negative" data-hours="-20">-20h</button>
       <button type="button" class="timer-btn reset" id="resetOffsetBtn">Reset</button>
+    </div>
+
+    <!-- Custom Hours Input (+ / - any custom number of hours) -->
+    <div class="custom-hours-row">
+      <input type="number" id="customHoursInput" placeholder="Hours" min="1" max="99999" value="5" />
+      <button type="button" id="customAddBtn" class="custom-btn add">+ Add Hours</button>
+      <button type="button" id="customSubBtn" class="custom-btn sub">- Remove Hours</button>
     </div>
   </div>
 

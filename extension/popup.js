@@ -1,6 +1,7 @@
 ﻿const statusEl = document.getElementById('statusMessage');
 const gatewayStatusEl = document.getElementById('gatewayStatus');
 const timerOffsetDisplay = document.getElementById('timerOffsetDisplay');
+const customHoursInput = document.getElementById('customHoursInput');
 
 let currentHourOffset = 0;
 
@@ -31,6 +32,17 @@ function updateOffsetUI(hours) {
     timerOffsetDisplay.textContent = '0h';
     timerOffsetDisplay.style.color = '#949ba4';
   }
+}
+
+function applyHourDelta(delta) {
+  const newOffset = currentHourOffset + delta;
+  updateOffsetUI(newOffset);
+  chrome.storage.local.set({ timerHourOffset: newOffset });
+
+  chrome.runtime.sendMessage({
+    action: 'ADJUST_TIMER',
+    hourOffset: newOffset
+  });
 }
 
 // Restore saved form values and current connection state
@@ -65,22 +77,15 @@ chrome.storage.local.get([
   }
 });
 
-// Setup Hour adjustment buttons (+1, +10, +20, -1, -10, -20)
+// Quick preset buttons (+1, +10, +20, -1, -10, -20)
 document.querySelectorAll('.timer-btn[data-hours]').forEach((btn) => {
   btn.addEventListener('click', () => {
     const delta = parseInt(btn.getAttribute('data-hours'), 10);
-    const newOffset = currentHourOffset + delta;
-    updateOffsetUI(newOffset);
-    chrome.storage.local.set({ timerHourOffset: newOffset });
-
-    // Instantly notify background worker to adjust active timer if connected
-    chrome.runtime.sendMessage({
-      action: 'ADJUST_TIMER',
-      hourOffset: newOffset
-    });
+    applyHourDelta(delta);
   });
 });
 
+// Reset offset back to 0
 document.getElementById('resetOffsetBtn').addEventListener('click', () => {
   updateOffsetUI(0);
   chrome.storage.local.set({ timerHourOffset: 0 });
@@ -88,6 +93,22 @@ document.getElementById('resetOffsetBtn').addEventListener('click', () => {
     action: 'ADJUST_TIMER',
     hourOffset: 0
   });
+});
+
+// Custom Add Hours Button
+document.getElementById('customAddBtn').addEventListener('click', () => {
+  const val = parseFloat(customHoursInput.value);
+  if (!isNaN(val) && val > 0) {
+    applyHourDelta(val);
+  }
+});
+
+// Custom Subtract Hours Button
+document.getElementById('customSubBtn').addEventListener('click', () => {
+  const val = parseFloat(customHoursInput.value);
+  if (!isNaN(val) && val > 0) {
+    applyHourDelta(-val);
+  }
 });
 
 // Listen for storage changes from background worker
