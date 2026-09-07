@@ -24,39 +24,18 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         connectGateway();
       } else if (preventIdleMode) {
         sendPresenceUpdate();
-        enforceAccountOnlineSetting();
       }
     }
   }
 });
 
-// Chrome Idle listener: instantly push online state when state changes
 if (chrome.idle) {
   chrome.idle.setDetectionInterval(60);
   chrome.idle.onStateChanged.addListener((newState) => {
     if (isConnected && preventIdleMode) {
-      console.log('[Background] Chrome idle state changed:', newState);
       sendPresenceUpdate();
-      enforceAccountOnlineSetting();
     }
   });
-}
-
-// 1. Enforces account-level status via REST API so other open browser tabs cannot switch user to idle
-async function enforceAccountOnlineSetting() {
-  if (!userToken || !preventIdleMode) return;
-  try {
-    await fetch('https://discord.com/api/v9/users/@me/settings', {
-      method: 'PATCH',
-      headers: {
-        'Authorization': userToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ status: 'online' })
-    });
-  } catch (e) {
-    // Silently ignore network hiccups
-  }
 }
 
 function calculateEffectiveStartTime() {
@@ -64,7 +43,6 @@ function calculateEffectiveStartTime() {
   return Math.floor(baseStartTime - (hourOffset * 3600 * 1000));
 }
 
-// 2. Gateway presence update (Opcode 3)
 function sendPresenceUpdate() {
   if (!gatewayWs || gatewayWs.readyState !== WebSocket.OPEN || !currentActivity) return;
   const updatePayload = {
@@ -107,16 +85,14 @@ function connectGateway() {
         clearInterval(heartbeatTimer);
         heartbeatTimer = setInterval(() => {
           if (gatewayWs && gatewayWs.readyState === WebSocket.OPEN) {
-            // Heartbeat
             gatewayWs.send(JSON.stringify({ op: 1, d: null }));
-            // Reinforce online presence on every heartbeat
             if (preventIdleMode) {
               sendPresenceUpdate();
             }
           }
         }, interval);
 
-        // Identify (Opcode 2) with explicit status: "online" and since: 0
+        // Identify (Opcode 2)
         const identifyPayload = {
           op: 2,
           d: {
@@ -138,14 +114,11 @@ function connectGateway() {
         gatewayWs.send(JSON.stringify(identifyPayload));
       }
 
-      // Opcode 0: Ready
-      if (msg.op === 0 && (msg.t === 'READY' || msg.t === 'SESSIONS_REPLACE')) {
+      // Opcode 0: READY only (Ignore SESSIONS_REPLACE so it never flickers presence)
+      if (msg.op === 0 && msg.t === 'READY') {
         isConnected = true;
         chrome.storage.local.set({ isConnected: true, statusMsg: 'Active on Discord' });
         sendPresenceUpdate();
-        if (preventIdleMode) {
-          enforceAccountOnlineSetting();
-        }
       }
 
       if (msg.op === 9) {
