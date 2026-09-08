@@ -61,39 +61,39 @@ function sendPresenceUpdate() {
   }
 }
 
-// Build Gateway Identify client properties based on selected device platform
+// Discord official client properties for device emulation
 function getDeviceProperties(platform) {
   switch (platform) {
     case 'phone':
       return {
         os: "Android",
         browser: "Discord Android",
-        device: "Samsung Galaxy S24"
+        device: "mobile"
       };
     case 'vr':
       return {
         os: "Android",
         browser: "Meta Quest",
-        device: "Meta Quest 3 VR"
+        device: "quest"
       };
     case 'xbox':
       return {
         os: "Xbox",
         browser: "Discord Xbox",
-        device: "Xbox Series X"
+        device: "console"
       };
     case 'playstation':
       return {
         os: "PlayStation",
         browser: "Discord PlayStation",
-        device: "PlayStation 5"
+        device: "console"
       };
     case 'desktop':
     default:
       return {
         os: "Windows",
-        browser: "Discord Client",
-        device: "Laptop / Desktop"
+        browser: "Chrome",
+        device: ""
       };
   }
 }
@@ -128,7 +128,7 @@ function connectGateway() {
           }
         }, interval);
 
-        // Identify (Opcode 2) with customized device properties
+        // Identify (Opcode 2)
         const identifyPayload = {
           op: 2,
           d: {
@@ -146,15 +146,18 @@ function connectGateway() {
         gatewayWs.send(JSON.stringify(identifyPayload));
       }
 
-      if (msg.op === 0 && msg.t === 'READY') {
+      if (msg.op === 0 && (msg.t === 'READY' || msg.t === 'SESSIONS_REPLACE')) {
         isConnected = true;
         chrome.storage.local.set({ isConnected: true, statusMsg: 'Active on Discord' });
         sendPresenceUpdate();
       }
 
       if (msg.op === 9) {
-        isConnected = false;
-        chrome.storage.local.set({ isConnected: false, statusMsg: 'Authentication failed. Check token.' });
+        // Opcode 9 = invalid session -> reconnect with clean handshake
+        console.warn('[Background] Opcode 9 invalid session. Reconnecting...');
+        setTimeout(() => {
+          if (isConnected) connectGateway();
+        }, 1500);
       }
     } catch (err) {
       console.error('[Background] Error processing gateway message:', err);
@@ -163,16 +166,17 @@ function connectGateway() {
 
   gatewayWs.onerror = (err) => {
     console.error('[Background] Gateway error:', err);
-    isConnected = false;
-    chrome.storage.local.set({ isConnected: false, statusMsg: 'Connection error. Retrying...' });
   };
 
-  gatewayWs.onclose = () => {
+  gatewayWs.onclose = (event) => {
+    console.log('[Background] Gateway closed with code:', event.code);
     clearInterval(heartbeatTimer);
     if (isConnected) {
       setTimeout(() => {
         if (isConnected) connectGateway();
-      }, 3000);
+      }, 2000);
+    } else {
+      chrome.storage.local.set({ isConnected: false, statusMsg: 'Offline' });
     }
   };
 }
@@ -192,9 +196,14 @@ function disconnectGateway() {
 }
 
 function buildActivity(data, effectiveStartTime) {
-  const resolvedLarge = KNOWN_ASSETS[(data.largeImage || 'lunatichost').toLowerCase()] || data.largeImage || '1544811725315113001';
-  const resolvedSmall = KNOWN_ASSETS[(data.smallImage || 'promptblox').toLowerCase()] || data.smallImage || '1544811727294570526';
+  let resolvedLarge = KNOWN_ASSETS[(data.largeImage || 'lunatichost').toLowerCase()] || data.largeImage || '1544811725315113001';
+  let resolvedSmall = KNOWN_ASSETS[(data.smallImage || 'promptblox').toLowerCase()] || data.smallImage || '1544811727294570526';
   const actType = typeof data.activityType === 'number' ? data.activityType : 0;
+
+  // If user entered both_logos but it is not in KNOWN_ASSETS, fallback to lunatichost so ? question mark never shows
+  if (resolvedLarge === 'both_logos') {
+    resolvedLarge = '1544811725315113001';
+  }
 
   const activity = {
     name: "LunaticHost",
@@ -221,7 +230,6 @@ function buildActivity(data, effectiveStartTime) {
     }
   };
 
-  // If streaming mode (Type 1), attach stream URL
   if (actType === 1) {
     activity.url = data.streamUrl || "https://twitch.tv/discord";
   }
@@ -241,6 +249,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     preventIdleMode = request.preventIdle !== false;
     currentPlatform = request.devicePlatform || "desktop";
     hourOffset = typeof request.timerHourOffset === 'number' ? request.timerHourOffset : 0;
+    isConnected = true;
 
     chrome.storage.local.get(['persistent_start_time'], (storage) => {
       let storedStart = Date.now();
@@ -293,6 +302,7 @@ chrome.storage.local.get([
     preventIdleMode = data.preventIdle !== false;
     currentPlatform = data.devicePlatform || "desktop";
     hourOffset = typeof data.timerHourOffset === 'number' ? data.timerHourOffset : 0;
+    isConnected = true;
 
     let storedStart = Date.now();
     if (data.keepTimer !== false && data.persistent_start_time) {
