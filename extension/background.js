@@ -72,9 +72,9 @@ function getDeviceProperties(platform) {
       };
     case 'vr':
       return {
-        os: "Android",
-        browser: "Discord Android",
-        device: "Oculus Quest"
+        os: "android",
+        browser: "Discord Quest",
+        device: "Meta Quest 3"
       };
     case 'xbox':
       return {
@@ -168,14 +168,24 @@ function connectGateway() {
   };
 
   gatewayWs.onclose = (event) => {
-    console.log('[Background] Gateway closed with code:', event.code);
+    console.log('[Background] Gateway closed with code:', event.code, 'reason:', event.reason);
     clearInterval(heartbeatTimer);
+
+    let errMsg = 'Offline';
+    if (event.code === 4004) {
+      errMsg = 'Authentication failed (Invalid Token). Please verify your token.';
+      isConnected = false;
+    } else if (event.code === 4005 || event.code === 4002 || event.code === 4000) {
+      errMsg = 'Session error (' + event.code + '). Reconnecting...';
+    }
+
     if (isConnected) {
+      chrome.storage.local.set({ isConnected: false, statusMsg: errMsg });
       setTimeout(() => {
         if (isConnected) connectGateway();
-      }, 2000);
+      }, 2500);
     } else {
-      chrome.storage.local.set({ isConnected: false, statusMsg: 'Offline' });
+      chrome.storage.local.set({ isConnected: false, statusMsg: errMsg });
     }
   };
 }

@@ -1,155 +1,179 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Discord RPC</title>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      width: 360px;
-      margin: 0;
-      padding: 16px;
-      background-color: #2b2d31;
-      color: #dbdee1;
+    :root {
+      --bg-primary: #1e1f22;
+      --bg-secondary: #2b2d31;
+      --bg-tertiary: #313338;
+      --bg-card: #232428;
+      --accent: #5865f2;
+      --accent-hover: #4752c4;
+      --green: #23a55a;
+      --red: #f23f43;
+      --text-normal: #dbdee1;
+      --text-muted: #949ba4;
+      --text-header: #f2f3f5;
+      --border-subtle: #383a40;
     }
-    h2 {
-      margin: 0 0 12px 0;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'gg sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      width: 375px;
+      padding: 16px;
+      background-color: var(--bg-secondary);
+      color: var(--text-normal);
+      font-size: 13px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .brand-title {
       font-size: 15px;
-      color: #ffffff;
+      font-weight: 700;
+      color: var(--text-header);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .badge {
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+    .badge.connected {
+      color: var(--green);
+      border-color: rgba(35, 165, 90, 0.4);
+      background: rgba(35, 165, 90, 0.1);
+    }
+    .badge.connected .badge-dot {
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+    }
+
+    .section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: #313338;
-      border: 1px solid #3f4147;
-      color: #949ba4;
-    }
-    .badge.connected {
-      color: #57f287;
-      border-color: #23a55a;
-    }
+
     .form-group {
       margin-bottom: 9px;
     }
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
     label {
       display: block;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #b5bac1;
-      margin-bottom: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #c4c9ce;
+      margin-bottom: 4px;
     }
     input, select {
       width: 100%;
-      box-sizing: border-box;
-      padding: 7px 9px;
-      border-radius: 4px;
-      border: 1px solid #1e1f22;
-      background: #1e1f22;
+      padding: 8px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-primary);
       color: #ffffff;
-      font-size: 12px;
+      font-size: 12.5px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     input:focus, select:focus {
       outline: none;
-      border-color: #5865f2;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
     }
     .row {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
     .row .form-group {
       flex: 1;
     }
-    .image-preview-card {
+
+    .image-picker-row {
       display: flex;
       gap: 8px;
       align-items: center;
-      margin-top: 4px;
-      padding: 6px 8px;
-      background: #232428;
-      border-radius: 4px;
-      border: 1px solid #313338;
+      margin-top: 5px;
     }
     .img-preview {
-      width: 32px;
-      height: 32px;
-      border-radius: 4px;
-      background: #1e1f22;
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      background: var(--bg-primary);
       object-fit: cover;
       display: none;
+      border: 1px solid var(--border-subtle);
     }
-    .upload-btn-label {
-      padding: 4px 8px;
-      font-size: 10px;
-      font-weight: 600;
-      background: #383a40;
-      color: #dbdee1;
-      border-radius: 3px;
-      cursor: pointer;
-      text-transform: none;
-      margin: 0;
-      white-space: nowrap;
-      border: 1px solid #4e5058;
-    }
-    .upload-btn-label:hover {
-      background: #4752c4;
-      color: #ffffff;
-      border-color: #5865f2;
-    }
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 6px;
-      padding: 6px 8px;
-      background: #232428;
-      border-radius: 4px;
-    }
-    .checkbox-row input {
-      width: auto;
-      margin: 0;
-      cursor: pointer;
-    }
-    .checkbox-row label {
-      margin: 0;
+    .upload-btn {
+      padding: 5px 10px;
       font-size: 11px;
-      text-transform: none;
-      color: #dbdee1;
+      font-weight: 600;
+      background: var(--bg-tertiary);
+      color: var(--text-normal);
+      border-radius: 4px;
       cursor: pointer;
-      font-weight: 500;
-    }
-    .timer-card {
-      background: #232428;
-      border: 1px solid #313338;
-      border-radius: 6px;
-      padding: 10px;
-      margin-top: 10px;
-      margin-bottom: 6px;
-    }
-    .timer-header {
-      display: flex;
-      justify-content: space-between;
+      white-space: nowrap;
+      border: 1px solid var(--border-subtle);
+      transition: all 0.15s ease;
+      display: inline-flex;
       align-items: center;
-      margin-bottom: 8px;
+      gap: 4px;
     }
-    .timer-header span {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #b5bac1;
+    .upload-btn:hover {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
     }
+
     .timer-display {
       font-size: 12px;
       font-weight: 700;
-      color: #57f287;
+      color: var(--green);
     }
     .timer-buttons-row {
       display: flex;
-      gap: 5px;
+      gap: 6px;
       margin-bottom: 6px;
     }
     .timer-btn {
@@ -157,22 +181,22 @@
       padding: 6px 0;
       font-size: 11px;
       font-weight: 600;
-      background: #313338;
-      color: #dbdee1;
-      border: 1px solid #3f4147;
-      border-radius: 4px;
+      background: var(--bg-tertiary);
+      color: var(--text-normal);
+      border: 1px solid var(--border-subtle);
+      border-radius: 5px;
       cursor: pointer;
-      transition: background 0.1s ease, color 0.1s ease;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
     }
     .timer-btn:hover {
-      background: #5865f2;
+      background: var(--accent);
       color: #ffffff;
-      border-color: #5865f2;
+      border-color: var(--accent);
     }
     .timer-btn.negative:hover {
-      background: #ed4245;
+      background: var(--red);
       color: #ffffff;
-      border-color: #ed4245;
+      border-color: var(--red);
     }
     .timer-btn.reset:hover {
       background: #4e5058;
@@ -183,39 +207,57 @@
       gap: 6px;
       margin-top: 8px;
       padding-top: 8px;
-      border-top: 1px solid #313338;
+      border-top: 1px solid var(--border-subtle);
       align-items: center;
     }
     .custom-hours-row input {
       width: 75px;
-      padding: 5px 8px;
-      font-size: 12px;
       text-align: center;
+      padding: 6px 8px;
     }
     .custom-btn {
       flex: 1;
-      padding: 6px 8px;
-      font-size: 11px;
+      padding: 7px 8px;
+      font-size: 11.5px;
       font-weight: 600;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
       cursor: pointer;
-      transition: background 0.1s ease;
+      transition: filter 0.15s ease;
     }
     .custom-btn.add {
-      background-color: #23a55a;
+      background-color: var(--green);
       color: white;
-    }
-    .custom-btn.add:hover {
-      background-color: #1f9250;
     }
     .custom-btn.sub {
-      background-color: #da373c;
+      background-color: var(--red);
       color: white;
     }
-    .custom-btn.sub:hover {
-      background-color: #b82d31;
+    .custom-btn:hover {
+      filter: brightness(1.1);
     }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+    }
+    .checkbox-row input {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+    .checkbox-row label {
+      margin: 0;
+      font-size: 11.5px;
+      color: var(--text-normal);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
     .btn-row {
       display: flex;
       gap: 8px;
@@ -223,60 +265,63 @@
     }
     button.main-btn {
       flex: 1;
-      padding: 9px 12px;
+      padding: 10px 14px;
       font-size: 13px;
       font-weight: 600;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
       cursor: pointer;
-      transition: background 0.15s ease;
+      transition: background 0.15s ease, transform 0.08s ease;
+    }
+    button.main-btn:active {
+      transform: scale(0.98);
     }
     #connectBtn {
-      background-color: #5865f2;
+      background-color: var(--accent);
       color: white;
     }
     #connectBtn:hover {
-      background-color: #4752c4;
+      background-color: var(--accent-hover);
     }
     #clearBtn {
       background-color: #4e5058;
       color: white;
     }
     #clearBtn:hover {
-      background-color: #6d6f78;
+      background-color: #5c5f66;
     }
+
     .discord-community-btn {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       width: 100%;
-      box-sizing: border-box;
       margin-top: 10px;
-      padding: 8px 12px;
-      background-color: #5865f2;
+      padding: 9px 12px;
+      background-color: #4752c4;
       color: #ffffff;
-      border-radius: 4px;
+      border-radius: 5px;
       font-size: 12px;
       font-weight: 600;
       text-decoration: none;
-      transition: background-color 0.15s ease, transform 0.1s ease;
+      transition: background-color 0.15s ease;
     }
     .discord-community-btn:hover {
-      background-color: #4752c4;
-      transform: translateY(-1px);
+      background-color: #3c45a5;
     }
     .discord-community-btn svg {
       width: 18px;
       height: 18px;
       fill: currentColor;
     }
+
     #statusMessage {
       margin-top: 10px;
-      font-size: 12px;
+      font-size: 11.5px;
       text-align: center;
       min-height: 16px;
-      color: #949ba4;
+      color: var(--text-muted);
       word-break: break-word;
     }
     #statusMessage.success { color: #57f287; }
@@ -284,102 +329,121 @@
   </style>
 </head>
 <body>
-  <h2>
-    Discord RPC (Browser Only)
-    <span id="gatewayStatus" class="badge">Offline</span>
-  </h2>
+  <header>
+    <div class="brand-title">
+      <span>Discord RPC</span>
+    </div>
+    <div id="gatewayStatus" class="badge">
+      <span class="badge-dot"></span>
+      <span class="badge-text">Offline</span>
+    </div>
+  </header>
 
-  <div class="form-group">
-    <label for="userToken">Discord User Token</label>
-    <input type="password" id="userToken" placeholder="Paste Discord user token here" />
-  </div>
-
-  <!-- Device Platform & Activity Mode Selectors -->
-  <div class="row">
+  <!-- Connection & Profile -->
+  <div class="section-card">
+    <div class="section-title">Discord Account</div>
     <div class="form-group">
-      <label for="devicePlatform">Device Icon / Status</label>
-      <select id="devicePlatform">
-        <option value="desktop">💻 Laptop / PC</option>
-        <option value="phone">📱 Mobile / Phone (Green Badge)</option>
-        <option value="vr">🥽 VR Headset (Meta Quest)</option>
-        <option value="xbox">🎮 Xbox Console</option>
-        <option value="playstation">🎮 PlayStation Console</option>
-      </select>
+      <label for="userToken">User Authorization Token</label>
+      <input type="password" id="userToken" placeholder="Paste Discord user token here" autocomplete="off" />
+    </div>
+  </div>
+
+  <!-- Platform & Mode -->
+  <div class="section-card">
+    <div class="section-title">Device & Activity Mode</div>
+    <div class="row">
+      <div class="form-group">
+        <label for="devicePlatform">Device Platform</label>
+        <select id="devicePlatform">
+          <option value="desktop">💻 Laptop / PC</option>
+          <option value="phone">📱 Mobile / Phone (Green Badge)</option>
+          <option value="vr">🥽 VR Headset (Meta Quest 3)</option>
+          <option value="xbox">🎮 Xbox Console</option>
+          <option value="playstation">🎮 PlayStation Console</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="activityType">Activity Type</label>
+        <select id="activityType">
+          <option value="0">🎮 Playing</option>
+          <option value="1">🔴 Live Streaming</option>
+          <option value="2">🎧 Listening</option>
+          <option value="3">📺 Watching</option>
+          <option value="5">🏆 Competing</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group" id="streamUrlGroup" style="display: none; margin-top: 8px;">
+      <label for="streamUrl">Twitch / YouTube URL</label>
+      <input type="text" id="streamUrl" value="https://twitch.tv/discord" placeholder="https://twitch.tv/channel" />
+    </div>
+  </div>
+
+  <!-- Presence Details -->
+  <div class="section-card">
+    <div class="section-title">Presence Information</div>
+    <div class="form-group">
+      <label for="details">Details (Line 1)</label>
+      <input type="text" id="details" value="LunaticHost" placeholder="e.g. LunaticHost" />
     </div>
     <div class="form-group">
-      <label for="activityType">Activity Mode</label>
-      <select id="activityType">
-        <option value="0">Playing Game</option>
-        <option value="1">🔴 Live Streaming (Twitch)</option>
-        <option value="2">🎧 Listening</option>
-        <option value="3">📺 Watching</option>
-        <option value="5">🏆 Competing</option>
-      </select>
+      <label for="state">State (Line 2)</label>
+      <input type="text" id="state" value="Promptblox" placeholder="e.g. Promptblox" />
     </div>
   </div>
 
-  <div class="form-group" id="streamUrlGroup" style="display: none;">
-    <label for="streamUrl">Stream Link (Twitch / YouTube)</label>
-    <input type="text" id="streamUrl" value="https://twitch.tv/discord" placeholder="https://twitch.tv/yourname" />
-  </div>
+  <!-- Media Assets -->
+  <div class="section-card">
+    <div class="section-title">Images & Assets</div>
+    <div class="form-group">
+      <label for="largeImage">Large Image</label>
+      <input type="text" id="largeImage" value="lunatichost" placeholder="lunatichost or https://..." />
+      <div class="image-picker-row">
+        <label for="largeFileInput" class="upload-btn">📁 Choose File</label>
+        <input type="file" id="largeFileInput" accept="image/*" style="display:none;" />
+        <img id="largePreview" class="img-preview" alt="Large Preview" />
+        <span id="largeImageName" style="font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Preset: lunatichost</span>
+      </div>
+    </div>
 
-  <div class="form-group">
-    <label for="details">Details</label>
-    <input type="text" id="details" value="LunaticHost" />
-  </div>
-
-  <div class="form-group">
-    <label for="state">State</label>
-    <input type="text" id="state" value="Promptblox" />
-  </div>
-
-  <!-- Image Section -->
-  <div class="form-group">
-    <label for="largeImage">Large Image (Asset Key or Direct Image URL)</label>
-    <input type="text" id="largeImage" value="lunatichost" placeholder="lunatichost or https://..." />
-    <div class="image-preview-card">
-      <label for="largeFileInput" class="upload-btn-label">📁 Choose File</label>
-      <input type="file" id="largeFileInput" accept="image/*" style="display:none;" />
-      <img id="largePreview" class="img-preview" alt="Large Preview" />
-      <span id="largeImageName" style="font-size: 11px; color: #949ba4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Preset: lunatichost</span>
+    <div class="form-group" style="margin-top: 10px;">
+      <label for="smallImage">Small Image</label>
+      <input type="text" id="smallImage" value="promptblox" placeholder="promptblox or https://..." />
+      <div class="image-picker-row">
+        <label for="smallFileInput" class="upload-btn">📁 Choose File</label>
+        <input type="file" id="smallFileInput" accept="image/*" style="display:none;" />
+        <img id="smallPreview" class="img-preview" alt="Small Preview" />
+        <span id="smallImageName" style="font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Preset: promptblox</span>
+      </div>
     </div>
   </div>
 
-  <div class="form-group">
-    <label for="smallImage">Small Image (Asset Key or Direct Image URL)</label>
-    <input type="text" id="smallImage" value="promptblox" placeholder="promptblox or https://..." />
-    <div class="image-preview-card">
-      <label for="smallFileInput" class="upload-btn-label">📁 Choose File</label>
-      <input type="file" id="smallFileInput" accept="image/*" style="display:none;" />
-      <img id="smallPreview" class="img-preview" alt="Small Preview" />
-      <span id="smallImageName" style="font-size: 11px; color: #949ba4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Preset: promptblox</span>
+  <!-- Action Buttons -->
+  <div class="section-card" id="buttonsCard">
+    <div class="section-title">Profile Buttons</div>
+    <div class="form-group">
+      <label>Button 1 (Text & Link)</label>
+      <div class="row">
+        <input type="text" id="btn1Text" value="LunaticHost" style="flex: 1;" placeholder="Label" />
+        <input type="text" id="btn1Url" value="https://lunatichost.com" style="flex: 2;" placeholder="https://..." />
+      </div>
+    </div>
+    <div class="form-group" style="margin-top: 8px;">
+      <label>Button 2 (Text & Link)</label>
+      <div class="row">
+        <input type="text" id="btn2Text" value="Promptblox.ai" style="flex: 1;" placeholder="Label" />
+        <input type="text" id="btn2Url" value="https://promptblox.ai" style="flex: 2;" placeholder="https://..." />
+      </div>
     </div>
   </div>
 
-  <div class="form-group">
-    <label>Button 1 (Label & Website URL)</label>
-    <div class="row">
-      <input type="text" id="btn1Text" value="LunaticHost" style="flex: 1;" />
-      <input type="text" id="btn1Url" value="https://lunatichost.com" style="flex: 2;" />
-    </div>
-  </div>
-
-  <div class="form-group">
-    <label>Button 2 (Label & Website URL)</label>
-    <div class="row">
-      <input type="text" id="btn2Text" value="Promptblox.ai" style="flex: 1;" />
-      <input type="text" id="btn2Url" value="https://promptblox.ai" style="flex: 2;" />
-    </div>
-  </div>
-
-  <!-- Timer Adjuster Card -->
-  <div class="timer-card">
-    <div class="timer-header">
-      <span>Adjust Elapsed Time</span>
+  <!-- Elapsed Time Adjuster -->
+  <div class="section-card">
+    <div class="section-title">
+      <span>Elapsed Time Counter</span>
       <span id="timerOffsetDisplay" class="timer-display">+0h</span>
     </div>
-
-    <!-- Quick Presets -->
     <div class="timer-buttons-row">
       <button type="button" class="timer-btn" data-hours="1">+1h</button>
       <button type="button" class="timer-btn" data-hours="10">+10h</button>
@@ -391,8 +455,6 @@
       <button type="button" class="timer-btn negative" data-hours="-20">-20h</button>
       <button type="button" class="timer-btn reset" id="resetOffsetBtn">Reset</button>
     </div>
-
-    <!-- Custom Hours Input -->
     <div class="custom-hours-row">
       <input type="number" id="customHoursInput" placeholder="Hours" min="1" max="99999" value="5" />
       <button type="button" id="customAddBtn" class="custom-btn add">+ Add Hours</button>
@@ -400,27 +462,30 @@
     </div>
   </div>
 
-  <div class="checkbox-row">
-    <input type="checkbox" id="keepTimer" checked />
-    <label for="keepTimer">Keep original timer across PC / Chrome restarts</label>
+  <!-- Preferences -->
+  <div class="section-card">
+    <div class="checkbox-row">
+      <input type="checkbox" id="keepTimer" checked />
+      <label for="keepTimer">Keep timer running across PC & Chrome restarts</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="preventIdle" checked />
+      <label for="preventIdle">Anti-Idle Defense (Always stay green Online)</label>
+    </div>
   </div>
 
-  <div class="checkbox-row">
-    <input type="checkbox" id="preventIdle" checked />
-    <label for="preventIdle">Prevent Idle (Always stay green Online)</label>
-  </div>
-
+  <!-- Action Controls -->
   <div class="btn-row">
     <button id="connectBtn" class="main-btn">Connect Status</button>
     <button id="clearBtn" class="main-btn">Disconnect</button>
   </div>
 
-  <!-- Discord Community Invite Button -->
+  <!-- Discord Community Server Link -->
   <a href="https://discord.gg/shPR5ZNZhY" target="_blank" class="discord-community-btn" id="discordInviteBtn">
     <svg viewBox="0 0 127.14 96.36">
       <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/>
     </svg>
-    Join Discord Server
+    Join Community Discord
   </a>
 
   <div id="statusMessage"></div>

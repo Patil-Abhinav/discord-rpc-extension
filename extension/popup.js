@@ -1,4 +1,4 @@
-﻿const statusEl = document.getElementById('statusMessage');
+const statusEl = document.getElementById('statusMessage');
 const gatewayStatusEl = document.getElementById('gatewayStatus');
 const timerOffsetDisplay = document.getElementById('timerOffsetDisplay');
 const customHoursInput = document.getElementById('customHoursInput');
@@ -24,12 +24,15 @@ function setStatus(msg, type = '') {
   statusEl.className = type;
 }
 
+const buttonsCard = document.getElementById('buttonsCard');
+
 function updateBadge(connected) {
+  const badgeText = gatewayStatusEl.querySelector('.badge-text') || gatewayStatusEl;
   if (connected) {
-    gatewayStatusEl.textContent = 'Active on Discord';
+    badgeText.textContent = 'Active on Discord';
     gatewayStatusEl.classList.add('connected');
   } else {
-    gatewayStatusEl.textContent = 'Offline';
+    badgeText.textContent = 'Offline';
     gatewayStatusEl.classList.remove('connected');
   }
 }
@@ -60,13 +63,16 @@ function applyHourDelta(delta) {
 }
 
 // Show/Hide stream URL input if activity is Live Streaming (Type 1)
-activityTypeSelect.addEventListener('change', () => {
+function syncActivityTypeUI() {
   if (activityTypeSelect.value === '1') {
     streamUrlGroup.style.display = 'block';
+    if (buttonsCard) buttonsCard.style.display = 'none';
   } else {
     streamUrlGroup.style.display = 'none';
+    if (buttonsCard) buttonsCard.style.display = 'block';
   }
-});
+}
+activityTypeSelect.addEventListener('change', syncActivityTypeUI);
 
 // Upload helper: Litterbox / Imgur
 async function uploadImageFile(file) {
@@ -173,8 +179,8 @@ chrome.storage.local.get([
   if (data.devicePlatform) devicePlatformSelect.value = data.devicePlatform;
   if (data.activityType) {
     activityTypeSelect.value = data.activityType;
-    if (data.activityType === '1') streamUrlGroup.style.display = 'block';
   }
+  syncActivityTypeUI();
   if (data.streamUrl) streamUrlInput.value = data.streamUrl;
 
   if (typeof data.keepTimer === 'boolean') {
