@@ -1,4 +1,4 @@
-﻿let gatewayWs = null;
+let gatewayWs = null;
 let heartbeatTimer = null;
 let currentActivity = null;
 let currentPlatform = "desktop";
@@ -73,8 +73,8 @@ function getDeviceProperties(platform) {
     case 'vr':
       return {
         os: "Android",
-        browser: "Meta Quest",
-        device: "quest"
+        browser: "Discord Android",
+        device: "Oculus Quest"
       };
     case 'xbox':
       return {
@@ -231,7 +231,15 @@ function buildActivity(data, effectiveStartTime) {
 
   // Only attach buttons in non-streaming modes (Type 0, 2, 3) because Streaming activities (Type 1) require Discord's native stream URL button
   if (actType === 1) {
-    activity.url = data.streamUrl || "https://twitch.tv/discord";
+    activity.name = data.details || "LunaticHost";
+    activity.type = 1;
+    let streamUrl = (data.streamUrl || '').trim();
+    if (!streamUrl.startsWith('http://') && !streamUrl.startsWith('https://')) {
+      streamUrl = "https://twitch.tv/discord";
+    }
+    activity.url = streamUrl;
+    delete activity.buttons;
+    delete activity.metadata;
   } else {
     activity.buttons = [
       data.btn1Text || "LunaticHost",
