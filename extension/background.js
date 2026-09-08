@@ -61,7 +61,7 @@ function sendPresenceUpdate() {
   }
 }
 
-// Discord official client properties for device emulation
+// Discord official client properties for platform emulation
 function getDeviceProperties(platform) {
   switch (platform) {
     case 'phone':
@@ -153,7 +153,6 @@ function connectGateway() {
       }
 
       if (msg.op === 9) {
-        // Opcode 9 = invalid session -> reconnect with clean handshake
         console.warn('[Background] Opcode 9 invalid session. Reconnecting...');
         setTimeout(() => {
           if (isConnected) connectGateway();
@@ -196,14 +195,22 @@ function disconnectGateway() {
 }
 
 function buildActivity(data, effectiveStartTime) {
-  let resolvedLarge = KNOWN_ASSETS[(data.largeImage || 'lunatichost').toLowerCase()] || data.largeImage || '1544811725315113001';
-  let resolvedSmall = KNOWN_ASSETS[(data.smallImage || 'promptblox').toLowerCase()] || data.smallImage || '1544811727294570526';
-  const actType = typeof data.activityType === 'number' ? data.activityType : 0;
+  // Clean user image inputs
+  let rawLarge = (data.largeImage || '').trim();
+  let rawSmall = (data.smallImage || '').trim();
 
-  // If user entered both_logos but it is not in KNOWN_ASSETS, fallback to lunatichost so ? question mark never shows
-  if (resolvedLarge === 'both_logos') {
+  let resolvedLarge = KNOWN_ASSETS[rawLarge.toLowerCase()] || rawLarge || '1544811725315113001';
+  let resolvedSmall = KNOWN_ASSETS[rawSmall.toLowerCase()] || rawSmall || '1544811727294570526';
+
+  // Fallback for both_logos or empty
+  if (!resolvedLarge || resolvedLarge.toLowerCase() === 'both_logos' || resolvedLarge.toLowerCase() === 'both logos') {
     resolvedLarge = '1544811725315113001';
   }
+  if (!resolvedSmall || resolvedSmall.toLowerCase() === 'promptblox') {
+    resolvedSmall = '1544811727294570526';
+  }
+
+  const actType = typeof data.activityType === 'number' ? data.activityType : 0;
 
   const activity = {
     name: "LunaticHost",
@@ -216,27 +223,26 @@ function buildActivity(data, effectiveStartTime) {
     },
     assets: {
       large_image: resolvedLarge,
-      large_text: data.details || "LunaticHost"
-    },
-    buttons: [
+      large_text: data.details || "LunaticHost",
+      small_image: resolvedSmall,
+      small_text: data.state || "Promptblox"
+    }
+  };
+
+  // Only attach buttons in non-streaming modes (Type 0, 2, 3) because Streaming activities (Type 1) require Discord's native stream URL button
+  if (actType === 1) {
+    activity.url = data.streamUrl || "https://twitch.tv/discord";
+  } else {
+    activity.buttons = [
       data.btn1Text || "LunaticHost",
       data.btn2Text || "Promptblox.ai"
-    ],
-    metadata: {
+    ];
+    activity.metadata = {
       button_urls: [
         data.btn1Url || "https://lunatichost.com",
         data.btn2Url || "https://promptblox.ai"
       ]
-    }
-  };
-
-  if (actType === 1) {
-    activity.url = data.streamUrl || "https://twitch.tv/discord";
-  }
-
-  if (data.smallImage) {
-    activity.assets.small_image = resolvedSmall;
-    activity.assets.small_text = data.state || "Promptblox";
+    };
   }
 
   return activity;
