@@ -1,4 +1,4 @@
-const statusEl = document.getElementById('statusMessage');
+﻿const statusEl = document.getElementById('statusMessage');
 const gatewayStatusEl = document.getElementById('gatewayStatus');
 const timerOffsetDisplay = document.getElementById('timerOffsetDisplay');
 const customHoursInput = document.getElementById('customHoursInput');
@@ -11,6 +11,11 @@ const largePreview = document.getElementById('largePreview');
 const smallPreview = document.getElementById('smallPreview');
 const largeImageName = document.getElementById('largeImageName');
 const smallImageName = document.getElementById('smallImageName');
+
+const devicePlatformSelect = document.getElementById('devicePlatform');
+const activityTypeSelect = document.getElementById('activityType');
+const streamUrlGroup = document.getElementById('streamUrlGroup');
+const streamUrlInput = document.getElementById('streamUrl');
 
 let currentHourOffset = 0;
 
@@ -54,11 +59,20 @@ function applyHourDelta(delta) {
   });
 }
 
-// Upload helper: uploads an image file directly to Catbox/Litterbox or Imgur free hosting
+// Show/Hide stream URL input if activity is Live Streaming (Type 1)
+activityTypeSelect.addEventListener('change', () => {
+  if (activityTypeSelect.value === '1') {
+    streamUrlGroup.style.display = 'block';
+  } else {
+    streamUrlGroup.style.display = 'none';
+  }
+});
+
+// Upload helper: Litterbox / Imgur
 async function uploadImageFile(file) {
   const formData = new FormData();
   formData.append('reqtype', 'fileupload');
-  formData.append('time', '72h'); // 72h temporary hosting
+  formData.append('time', '72h');
   formData.append('fileToUpload', file);
 
   try {
@@ -74,7 +88,6 @@ async function uploadImageFile(file) {
     console.warn('Litterbox upload failed, attempting fallback...', e);
   }
 
-  // Fallback to free image uploader
   const fbData = new FormData();
   fbData.append('image', file);
   const fbRes = await fetch('https://api.imgur.com/3/image', {
@@ -87,7 +100,6 @@ async function uploadImageFile(file) {
   throw new Error('Image upload failed. Please use an image URL instead.');
 }
 
-// Handle file pickers
 largeFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -130,7 +142,9 @@ smallFileInput.addEventListener('change', async (e) => {
 chrome.storage.local.get([
   'token', 'details', 'state', 'largeImage', 'smallImage',
   'btn1Text', 'btn1Url', 'btn2Text', 'btn2Url',
-  'keepTimer', 'preventIdle', 'timerHourOffset', 'isConnected', 'statusMsg'
+  'keepTimer', 'preventIdle', 'timerHourOffset',
+  'devicePlatform', 'activityType', 'streamUrl',
+  'isConnected', 'statusMsg'
 ], (data) => {
   if (data.token) document.getElementById('userToken').value = data.token;
   if (data.details) document.getElementById('details').value = data.details;
@@ -155,6 +169,13 @@ chrome.storage.local.get([
   if (data.btn1Url) document.getElementById('btn1Url').value = data.btn1Url;
   if (data.btn2Text) document.getElementById('btn2Text').value = data.btn2Text;
   if (data.btn2Url) document.getElementById('btn2Url').value = data.btn2Url;
+
+  if (data.devicePlatform) devicePlatformSelect.value = data.devicePlatform;
+  if (data.activityType) {
+    activityTypeSelect.value = data.activityType;
+    if (data.activityType === '1') streamUrlGroup.style.display = 'block';
+  }
+  if (data.streamUrl) streamUrlInput.value = data.streamUrl;
 
   if (typeof data.keepTimer === 'boolean') {
     document.getElementById('keepTimer').checked = data.keepTimer;
@@ -217,6 +238,10 @@ document.getElementById('connectBtn').addEventListener('click', () => {
   const keepTimer = document.getElementById('keepTimer').checked;
   const preventIdle = document.getElementById('preventIdle').checked;
 
+  const devicePlatform = devicePlatformSelect.value;
+  const activityType = parseInt(activityTypeSelect.value, 10);
+  const streamUrl = streamUrlInput.value.trim();
+
   if (!token) {
     setStatus('Please paste your Discord User Token above!', 'error');
     return;
@@ -225,6 +250,7 @@ document.getElementById('connectBtn').addEventListener('click', () => {
   chrome.storage.local.set({
     token, details, state, largeImage, smallImage,
     btn1Text, btn1Url, btn2Text, btn2Url, keepTimer, preventIdle,
+    devicePlatform, activityType, streamUrl,
     timerHourOffset: currentHourOffset
   });
 
@@ -234,10 +260,11 @@ document.getElementById('connectBtn').addEventListener('click', () => {
     action: 'CONNECT',
     token, details, state, largeImage, smallImage,
     btn1Text, btn1Url, btn2Text, btn2Url, keepTimer, preventIdle,
+    devicePlatform, activityType, streamUrl,
     timerHourOffset: currentHourOffset
   }, () => {
     updateBadge(true);
-    setStatus('Active in background! Auto-resumes and prevents idle.', 'success');
+    setStatus('Active in background! Showing device & activity status.', 'success');
   });
 });
 

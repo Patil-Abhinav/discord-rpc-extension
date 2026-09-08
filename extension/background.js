@@ -1,6 +1,7 @@
 ﻿let gatewayWs = null;
 let heartbeatTimer = null;
 let currentActivity = null;
+let currentPlatform = "desktop";
 let userToken = null;
 let isConnected = false;
 let preventIdleMode = true;
@@ -13,7 +14,6 @@ const KNOWN_ASSETS = {
   'promptblox': '1544811727294570526'
 };
 
-// Periodic keepalive alarm (every 15s) to guarantee connection and enforce "online"
 chrome.alarms.create('rpc_keepalive', { periodInMinutes: 0.25 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -61,6 +61,43 @@ function sendPresenceUpdate() {
   }
 }
 
+// Build Gateway Identify client properties based on selected device platform
+function getDeviceProperties(platform) {
+  switch (platform) {
+    case 'phone':
+      return {
+        os: "Android",
+        browser: "Discord Android",
+        device: "Samsung Galaxy S24"
+      };
+    case 'vr':
+      return {
+        os: "Android",
+        browser: "Meta Quest",
+        device: "Meta Quest 3 VR"
+      };
+    case 'xbox':
+      return {
+        os: "Xbox",
+        browser: "Discord Xbox",
+        device: "Xbox Series X"
+      };
+    case 'playstation':
+      return {
+        os: "PlayStation",
+        browser: "Discord PlayStation",
+        device: "PlayStation 5"
+      };
+    case 'desktop':
+    default:
+      return {
+        os: "Windows",
+        browser: "Discord Client",
+        device: "Laptop / Desktop"
+      };
+  }
+}
+
 function connectGateway() {
   if (!userToken || !currentActivity) return;
 
@@ -72,14 +109,13 @@ function connectGateway() {
   gatewayWs = new WebSocket('wss://gateway.discord.gg/?v=9&encoding=json');
 
   gatewayWs.onopen = () => {
-    console.log('[Background] Connected to Discord Gateway');
+    console.log('[Background] Connected to Discord Gateway as', currentPlatform);
   };
 
   gatewayWs.onmessage = (e) => {
     try {
       const msg = JSON.parse(e.data);
 
-      // Opcode 10: Hello
       if (msg.op === 10) {
         const interval = msg.d.heartbeat_interval;
         clearInterval(heartbeatTimer);
@@ -92,17 +128,13 @@ function connectGateway() {
           }
         }, interval);
 
-        // Identify (Opcode 2)
+        // Identify (Opcode 2) with customized device properties
         const identifyPayload = {
           op: 2,
           d: {
             token: userToken,
             capabilities: 8189,
-            properties: {
-              os: "Windows",
-              browser: "Chrome",
-              device: ""
-            },
+            properties: getDeviceProperties(currentPlatform),
             presence: {
               status: "online",
               since: 0,
@@ -114,7 +146,6 @@ function connectGateway() {
         gatewayWs.send(JSON.stringify(identifyPayload));
       }
 
-      // Opcode 0: READY only (Ignore SESSIONS_REPLACE so it never flickers presence)
       if (msg.op === 0 && msg.t === 'READY') {
         isConnected = true;
         chrome.storage.local.set({ isConnected: true, statusMsg: 'Active on Discord' });
@@ -163,10 +194,11 @@ function disconnectGateway() {
 function buildActivity(data, effectiveStartTime) {
   const resolvedLarge = KNOWN_ASSETS[(data.largeImage || 'lunatichost').toLowerCase()] || data.largeImage || '1544811725315113001';
   const resolvedSmall = KNOWN_ASSETS[(data.smallImage || 'promptblox').toLowerCase()] || data.smallImage || '1544811727294570526';
+  const actType = typeof data.activityType === 'number' ? data.activityType : 0;
 
   const activity = {
     name: "LunaticHost",
-    type: 0,
+    type: actType,
     application_id: APP_ID,
     details: data.details || "LunaticHost",
     state: data.state || "Promptblox",
@@ -189,6 +221,11 @@ function buildActivity(data, effectiveStartTime) {
     }
   };
 
+  // If streaming mode (Type 1), attach stream URL
+  if (actType === 1) {
+    activity.url = data.streamUrl || "https://twitch.tv/discord";
+  }
+
   if (data.smallImage) {
     activity.assets.small_image = resolvedSmall;
     activity.assets.small_text = data.state || "Promptblox";
@@ -202,6 +239,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'CONNECT') {
     userToken = request.token;
     preventIdleMode = request.preventIdle !== false;
+    currentPlatform = request.devicePlatform || "desktop";
     hourOffset = typeof request.timerHourOffset === 'number' ? request.timerHourOffset : 0;
 
     chrome.storage.local.get(['persistent_start_time'], (storage) => {
@@ -246,11 +284,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.storage.local.get([
   'token', 'details', 'state', 'largeImage', 'smallImage',
   'btn1Text', 'btn1Url', 'btn2Text', 'btn2Url',
-  'keepTimer', 'preventIdle', 'timerHourOffset', 'persistent_start_time', 'isConnected'
+  'keepTimer', 'preventIdle', 'timerHourOffset',
+  'devicePlatform', 'activityType', 'streamUrl',
+  'persistent_start_time', 'isConnected'
 ], (data) => {
   if (data.isConnected && data.token) {
     userToken = data.token;
     preventIdleMode = data.preventIdle !== false;
+    currentPlatform = data.devicePlatform || "desktop";
     hourOffset = typeof data.timerHourOffset === 'number' ? data.timerHourOffset : 0;
 
     let storedStart = Date.now();
