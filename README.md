@@ -103,7 +103,7 @@ discord-rpc-extension/
 ## 🔒 Security & Privacy
 
 - All credentials and configuration settings are stored locally in your browser's private `chrome.storage.local`.
-- No user tokens or private data are ever transmitted to external servers.
+- No user tokens or private data are ever transmitted to external servers(i swear).
 - WebSocket payloads travel directly between your browser and Discord's official Gateway server (`gateway.discord.gg`).
 
 ---
