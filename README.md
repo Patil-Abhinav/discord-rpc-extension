@@ -1,7 +1,7 @@
 ﻿# Discord Rich Presence Chrome Extension (Browser-Only)
 
 A powerful, lightweight Google Chrome extension (Manifest V3) that sets custom Discord Rich Presence (RPC) activities with custom details, state, live elapsed timers, clickable profile buttons, custom images, device platform emulation, and streaming indicators directly from your browser—**no Discord desktop app or local server required**.
-
+MADE IN ASIA
 ---
 
 ## 🌟 Key Features
